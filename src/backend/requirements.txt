@@ -1,6 +1,5 @@
 requests
 flask
-flask-sock
 quart
 openai
 azure-identity
