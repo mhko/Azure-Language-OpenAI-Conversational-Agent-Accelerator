@@ -1,8 +1,12 @@
 requests
 flask
+flask-sock
+quart
 openai
 azure-identity
 azure-search-documents
 azure-ai-textanalytics
 azure-ai-language-conversations
 azure-ai-language-questionanswering
+azure-cognitiveservices-speech
+azure-cognitiveservices-speech-audio

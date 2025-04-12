@@ -2,10 +2,126 @@
 // Licensed under the MIT License.
 import { useState, useEffect, useRef } from 'react';
 import Markdown from 'react-markdown'
+import useAudioRecorder from "/hooks/useAudioRecorder";
+import useAudioPlayer from '/hooks/useAudioPlayer';
+import useRealTime from "/hooks/useRealtime";
+import { Button } from "/components/ui/button";
+import StatusMessage from "/components/ui/status-message";
+
+import { Mic, MicOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const Chat = () => {
+    const [isRecording, setIsRecording] = useState(false);
     const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [recognizingSpeech, setRecognizingSpeech] = useState("");
+
+    const { startSession, addUserAudio, inputAudioBufferClear } = useRealTime({
+        enableInputAudioTranscription: true,
+        onWebSocketOpen: () => console.log("WebSocket connection opened"),
+        onWebSocketClose: () => console.log("WebSocket connection closed"),
+        onWebSocketError: event => console.error("WebSocket error:", event),
+        onReceivedError: message => console.error("error", message),
+        onReceivedRecognizingSpeech: message => {
+            console.log("recognizing speech received : ", message.transcript);
+            setRecognizingSpeech(message.transcript)
+        },
+        onReceivedRecognizedSpeech: message => {
+            console.log("recognized speech received : ", message.transcript);
+            setRecognizingSpeech(message.transcript)
+            setMessages((prevMessages) => [
+                ...prevMessages, { role: "User", content: message.transcript }
+            ]);
+            setIsTyping(true);            
+            //handleSendMessage(message.transcript)
+        },
+        onReceivedSystemMessage: message => {
+            console.log("system message received: ", message.messages);
+            setIsTyping(false);
+
+            for (const msg of message.messages) {
+                setMessages((prevMessages) => [
+                    ...prevMessages, { role: "System", content: msg }
+                ]);
+            }
+        },
+        onReceivedResponseAudioDelta: message => {
+            console.log("audio delta received.");
+            isRecording && playAudio(message.delta);
+        },
+        onReceivedResponseAudioArrayBuffer: audio_data => {
+            console.log("audio received.");
+            isRecording && playAudio(audio_data);
+        },
+        onReceivedResponseAudioBlob: audio_data => {
+            console.log("audio delta received.");
+            isRecording && playAudio(audio_data);
+        },
+        onReceivedInputAudioBufferSpeechStarted: () => {
+            console.log("speech started. stopping audio player");
+            stopAudioPlayer();
+        },
+        onReceivedExtensionMiddleTierToolResponse: message => {
+            console.log(message.tool_result);
+            // const result: ToolResult = JSON.parse(message.tool_result);
+
+            // const files: GroundingFile[] = result.sources.map(x => {
+            //     return { id: x.chunk_id, name: x.title, content: x.chunk };
+            // });
+
+            // setGroundingFiles(prev => [...prev, ...files]);
+        },
+        onReceivedInputAudioTranscriptionCompleted: message => {
+            console.log(message.transcript);
+            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.transcript };
+            // setSpeechReponse(speechResponse);
+        },
+        onReceivedConversationItemCreated: message => {
+            console.log("onReceivedConversationItemCreated");
+            console.log(message.type);
+            console.log(message.item.type);
+            console.log(message.item.arguments);
+            console.log(message.item);
+            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.item.arguments };
+            // setSpeechReponse(speechResponse);
+        },
+        onReceivedResponseFunctionCallArgumentsDone: message => {
+            console.log("onReceivedResponseFunctionCallArgumentsDone");
+            console.log(message.type);
+            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.arguments };
+            // setSpeechReponse(speechResponse);
+        },
+        onReceivedResponseOutputItemDone: message => {
+            console.log("onReceivedOutputItemDone");
+            console.log(message.type);
+            console.log(message.item);
+            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.type };
+            // setSpeechReponse(speechResponse);
+        }
+    });
+
+    const { reset: resetAudioPlayer, playX: playAudio, stop: stopAudioPlayer } = useAudioPlayer();
+    const { start: startAudioRecording, stop: stopAudioRecording } = useAudioRecorder({ onAudioRecorded: addUserAudio });
+
+    const onToggleListening = async () => {
+        if (!isRecording) {
+            console.log("start recording..")
+            startSession();
+            await startAudioRecording();
+            resetAudioPlayer();
+
+            setIsRecording(true);
+        } else {
+            console.log("stop recording..")
+            await stopAudioRecording();
+            stopAudioPlayer();
+            inputAudioBufferClear();
+
+            setIsRecording(false);
+        }
+    };
+
     const messageEndRef = useRef(null);
     const welcomeMessage = 'Ask a question...';
 
@@ -72,6 +188,8 @@ const Chat = () => {
         }
     };
 
+    const { t } = useTranslation();
+
     return (
         <div className="chat-container">
             <div className="chat-messages">
@@ -104,6 +222,7 @@ const Chat = () => {
                     type="text"
                     name="input"
                     placeholder="Type your message..."
+                    onChange={(e) => setInputValue(e.target.value)}
                     disabled={isTyping}/>
                 <button
                     className="chat-submit-button" 
@@ -111,7 +230,28 @@ const Chat = () => {
                 >
                     Send
                 </button>
+
+                <Button
+                    onClick={onToggleListening}
+                    className={`h-12 w-60 ${isRecording ? "bg-red-600 hover:bg-red-700" : "bg-purple-500 hover:bg-purple-600"}`}
+                    aria-label={isRecording ? t("app.stopRecording") : t("app.startRecording")}
+                >
+                    {isRecording ? (
+                        <>
+                            <MicOff className="mr-2 h-4 w-4" />
+                            {t("app.stopConversation")}
+                        </>
+                    ) : (
+                        <>
+                            <Mic className="mr-2 h-6 w-6" />
+                        </>
+                    )}
+                </Button>
             </form>
+            <br/>
+            <div className="mb-4 flex flex-col items-center justify-center">
+                <StatusMessage isRecording={isRecording} />
+            </div>            
         </div>
     );
 }
