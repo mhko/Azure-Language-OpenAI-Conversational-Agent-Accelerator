@@ -24,16 +24,8 @@ export class Recorder {
 
             this.workletNode = new AudioWorkletNode(this.audioContext, "audio-processor-worklet");
             this.workletNode.port.onmessage = event => {
-                console.log("onmessage length ", event.data.buffer.length)
                 this.onDataAvailable(event.data.buffer);
             };
-
-            // const sampleRate = this.audioContext.sampleRate;
-            // const audioTracks = this.mediaStream?.getAudioTracks();
-            // const numberOfChannels = audioTracks?.[0].getSettings().channelCount || 1;
-
-            // console.log("Sample rate:", sampleRate);
-            // console.log("Number of channels:", numberOfChannels);
 
             this.mediaStreamSource.connect(this.workletNode);
             this.workletNode.connect(this.audioContext.destination);

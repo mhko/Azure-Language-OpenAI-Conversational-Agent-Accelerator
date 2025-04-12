@@ -15,26 +15,25 @@ const Chat = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
-    const [recognizingSpeech, setRecognizingSpeech] = useState("");
+    const [transcription, setTranscription] = useState("");
 
     const { startSession, addUserAudio, inputAudioBufferClear } = useRealTime({
-        enableInputAudioTranscription: true,
         onWebSocketOpen: () => console.log("WebSocket connection opened"),
         onWebSocketClose: () => console.log("WebSocket connection closed"),
         onWebSocketError: event => console.error("WebSocket error:", event),
         onReceivedError: message => console.error("error", message),
         onReceivedRecognizingSpeech: message => {
             console.log("recognizing speech received : ", message.transcript);
-            setRecognizingSpeech(message.transcript)
+            setTranscription(message.transcript)
         },
         onReceivedRecognizedSpeech: message => {
             console.log("recognized speech received : ", message.transcript);
-            setRecognizingSpeech(message.transcript)
+            setTranscription(message.transcript)
             setMessages((prevMessages) => [
                 ...prevMessages, { role: "User", content: message.transcript }
             ]);
+            setTranscription("")
             setIsTyping(true);            
-            //handleSendMessage(message.transcript)
         },
         onReceivedSystemMessage: message => {
             console.log("system message received: ", message.messages);
@@ -46,62 +45,13 @@ const Chat = () => {
                 ]);
             }
         },
-        onReceivedResponseAudioDelta: message => {
-            console.log("audio delta received.");
-            isRecording && playAudio(message.delta);
-        },
-        onReceivedResponseAudioArrayBuffer: audio_data => {
+        onReceivedResponseAudio: audio_data => {
             console.log("audio received.");
             isRecording && playAudio(audio_data);
-        },
-        onReceivedResponseAudioBlob: audio_data => {
-            console.log("audio delta received.");
-            isRecording && playAudio(audio_data);
-        },
-        onReceivedInputAudioBufferSpeechStarted: () => {
-            console.log("speech started. stopping audio player");
-            stopAudioPlayer();
-        },
-        onReceivedExtensionMiddleTierToolResponse: message => {
-            console.log(message.tool_result);
-            // const result: ToolResult = JSON.parse(message.tool_result);
-
-            // const files: GroundingFile[] = result.sources.map(x => {
-            //     return { id: x.chunk_id, name: x.title, content: x.chunk };
-            // });
-
-            // setGroundingFiles(prev => [...prev, ...files]);
-        },
-        onReceivedInputAudioTranscriptionCompleted: message => {
-            console.log(message.transcript);
-            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.transcript };
-            // setSpeechReponse(speechResponse);
-        },
-        onReceivedConversationItemCreated: message => {
-            console.log("onReceivedConversationItemCreated");
-            console.log(message.type);
-            console.log(message.item.type);
-            console.log(message.item.arguments);
-            console.log(message.item);
-            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.item.arguments };
-            // setSpeechReponse(speechResponse);
-        },
-        onReceivedResponseFunctionCallArgumentsDone: message => {
-            console.log("onReceivedResponseFunctionCallArgumentsDone");
-            console.log(message.type);
-            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.arguments };
-            // setSpeechReponse(speechResponse);
-        },
-        onReceivedResponseOutputItemDone: message => {
-            console.log("onReceivedOutputItemDone");
-            console.log(message.type);
-            console.log(message.item);
-            // const speechResponse: SpeechResponse = { latency: "100.00ms", transcription: message.type };
-            // setSpeechReponse(speechResponse);
         }
     });
 
-    const { reset: resetAudioPlayer, playX: playAudio, stop: stopAudioPlayer } = useAudioPlayer();
+    const { reset: resetAudioPlayer, playBinaryBuffer: playAudio, stop: stopAudioPlayer } = useAudioPlayer();
     const { start: startAudioRecording, stop: stopAudioRecording } = useAudioRecorder({ onAudioRecorded: addUserAudio });
 
     const onToggleListening = async () => {
@@ -222,8 +172,11 @@ const Chat = () => {
                     type="text"
                     name="input"
                     placeholder="Type your message..."
-                    onChange={(e) => setInputValue(e.target.value)}
-                    disabled={isTyping}/>
+                    value={isRecording ? transcription : ""}
+                    disabled={isTyping}
+                    readOnly={isRecording}
+                />
+                    
                 <button
                     className="chat-submit-button" 
                     type="submit"
@@ -249,6 +202,7 @@ const Chat = () => {
                 </Button>
             </form>
             <br/>
+            
             <div className="mb-4 flex flex-col items-center justify-center">
                 <StatusMessage isRecording={isRecording} />
             </div>            

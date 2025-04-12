@@ -1,18 +1,8 @@
 import useWebSocket from "react-use-websocket";
 
 import {
-    InputAudioBufferAppendCommand,
     InputAudioBufferClearCommand,
     Message,
-    ResponseAudioDelta,
-    ResponseAudioTranscriptDelta,
-    ResponseDone,
-    SessionUpdateCommand,
-    ExtensionMiddleTierToolResponse,
-    ResponseInputAudioTranscriptionCompleted,
-    ConversationItemCreated,
-    ResponseFunctionCallArgumentsDone,
-    ResponseOutputItemDone,
     RecognizingSpeech,
     RecognizedSpeech,
     SystemMessage
@@ -34,26 +24,12 @@ type Parameters = {
     onReceivedRecognizedSpeech?: (message: RecognizedSpeech) => void;
     onReceivedSystemMessage?: (message: SystemMessage) => void;
 
-    onReceivedResponseAudioDelta?: (message: ResponseAudioDelta) => void;
-    onReceivedResponseAudioArrayBuffer?: (audio_data: ArrayBuffer) => void;
-    onReceivedResponseAudioBlob?: (audio_data: Blob) => void;
-    onReceivedInputAudioBufferSpeechStarted?: (message: Message) => void;
-    onReceivedResponseDone?: (message: ResponseDone) => void;
-    onReceivedExtensionMiddleTierToolResponse?: (message: ExtensionMiddleTierToolResponse) => void;
-    onReceivedResponseAudioTranscriptDelta?: (message: ResponseAudioTranscriptDelta) => void;
-    onReceivedInputAudioTranscriptionCompleted?: (message: ResponseInputAudioTranscriptionCompleted) => void;
-    onReceivedConversationItemCreated?: (message: ConversationItemCreated) => void;
-    onReceivedResponseFunctionCallArgumentsDone?: (message: ResponseFunctionCallArgumentsDone) => void;
-    onReceivedResponseOutputItemDone?: (message: ResponseOutputItemDone) => void;
+    onReceivedResponseAudio?: (audio_data: ArrayBuffer) => void;
+
     onReceivedError?: (message: Message) => void;
 };
 
 export default function useRealTime({
-    useDirectAoaiApi,
-    aoaiEndpointOverride,
-    aoaiApiKeyOverride,
-    aoaiModelOverride,
-    enableInputAudioTranscription,
     onWebSocketOpen,
     onWebSocketClose,
     onWebSocketError,
@@ -61,22 +37,9 @@ export default function useRealTime({
     onReceivedRecognizingSpeech,
     onReceivedRecognizedSpeech,
     onReceivedSystemMessage,
-    onReceivedResponseDone,
-    onReceivedResponseAudioDelta,
-    onReceivedResponseAudioArrayBuffer,
-    onReceivedResponseAudioBlob,
-    onReceivedResponseAudioTranscriptDelta,
-    onReceivedInputAudioBufferSpeechStarted,
-    onReceivedExtensionMiddleTierToolResponse,
-    onReceivedInputAudioTranscriptionCompleted,
-    onReceivedConversationItemCreated,
-    onReceivedResponseFunctionCallArgumentsDone,
-    onReceivedResponseOutputItemDone,
+    onReceivedResponseAudio,
     onReceivedError
 }: Parameters) {
-    // const wsEndpoint = useDirectAoaiApi
-    //     ? `${aoaiEndpointOverride}/openai/realtime?api-key=${aoaiApiKeyOverride}&deployment=${aoaiModelOverride}&api-version=2024-10-01-preview`
-    //     : `/realtime`;
 
     const wsEndpoint = `/ws`;
 
@@ -97,44 +60,10 @@ export default function useRealTime({
 
     const startSession = () => {
         console.log("startSession")
-        // const socket = getWebSocket()
-
-        // const command: SessionUpdateCommand = {
-        //     type: "session.update",
-        //     session: {
-        //         turn_detection: {
-        //             type: "server_vad"
-        //         }
-        //     }
-        // };
-
-        // if (enableInputAudioTranscription) {
-        //     command.session.input_audio_transcription = {
-        //         model: "whisper-1"
-        //     };
-        // }
-
-        // sendJsonMessage(command);
     };
 
-    // const addUserAudio = (base64Audio: string) => {
-    //     //console.log("addUserAudio")
-    //     // const command: InputAudioBufferAppendCommand = {
-    //     //     type: "input_audio_buffer.append",
-    //     //     audio: base64Audio
-    //     // };
-
-    //     //sendJsonMessage(command);
-    //     //sendMessage(base64Audio)
-    //     //var ws = getWebSocket;
-    //     console.log("addUserAudio", base64Audio)
-
-    //     //const binaryData = new TextEncoder().encode(base64Audio);
-    //     sendMessage(base64Audio);
-    // };
-
     const addUserAudio = (audio: ArrayBuffer) => {
-        //console.log("addUserAudio", audio)
+        console.log("addUserAudio")
 
         sendMessage(audio);
     };
@@ -142,6 +71,7 @@ export default function useRealTime({
     const inputAudioBufferClear = () => {
         console.log("inputAudioBufferClear")
 
+        // TODO, nateko, this isn't consumed by the server at this time. 
         const command: InputAudioBufferClearCommand = {
             type: "input_audio_buffer.clear"
         };
@@ -154,12 +84,10 @@ export default function useRealTime({
 
         onWebSocketMessage?.(event);
 
-        console.log("Type:", event.data.constructor.name); 
-
         if (event.data instanceof ArrayBuffer) {
             // This is binary data as ArrayBuffer
             console.log("Received binary data as ArrayBuffer");
-            onReceivedResponseAudioArrayBuffer?.(event.data);
+            onReceivedResponseAudio?.(event.data); // TODO, nateko, this is hacky. Try encoded base64 string in a json object.
         }
         else {
             let message: Message;
@@ -179,33 +107,6 @@ export default function useRealTime({
                     break;
                 case "system_message":
                     onReceivedSystemMessage?.(message as SystemMessage);
-                    break;
-                case "response.done":
-                    onReceivedResponseDone?.(message as ResponseDone);
-                    break;
-                case "response.audio.delta":
-                    onReceivedResponseAudioDelta?.(message as ResponseAudioDelta);
-                    break;
-                case "response.audio_transcript.delta":
-                    onReceivedResponseAudioTranscriptDelta?.(message as ResponseAudioTranscriptDelta);
-                    break;
-                case "input_audio_buffer.speech_started":
-                    onReceivedInputAudioBufferSpeechStarted?.(message);
-                    break;
-                case "conversation.item.input_audio_transcription.completed":
-                    onReceivedInputAudioTranscriptionCompleted?.(message as ResponseInputAudioTranscriptionCompleted);
-                    break;
-                case "extension.middle_tier_tool_response":
-                    onReceivedExtensionMiddleTierToolResponse?.(message as ExtensionMiddleTierToolResponse);
-                    break;
-                case "conversation.item.created":
-                    onReceivedConversationItemCreated?.(message as ConversationItemCreated);
-                    break;
-                case "response.function_call_arguments.done":
-                    onReceivedResponseFunctionCallArgumentsDone?.(message as ResponseFunctionCallArgumentsDone);
-                    break;
-                case "response.output_item.done":
-                    onReceivedResponseOutputItemDone?.(message as ResponseOutputItemDone);
                     break;
                 case "error":
                     onReceivedError?.(message);

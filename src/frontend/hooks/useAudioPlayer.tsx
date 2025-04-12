@@ -20,10 +20,8 @@ export default function useAudioPlayer() {
         audioPlayer.current?.play(pcmData);
     };
 
-    const playX = (base64Audio: ArrayBuffer) => {
-        // const binary = atob(base64Audio);
-        // const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-        const pcmData = new Int16Array(base64Audio);
+    const playBinaryBuffer = (arrayBuffer: ArrayBuffer) => {
+        const pcmData = new Int16Array(arrayBuffer);
 
         audioPlayer.current?.play(pcmData);
     };
@@ -32,5 +30,5 @@ export default function useAudioPlayer() {
         audioPlayer.current?.stop();
     };
 
-    return { reset, play, playX, stop };
+    return { reset, play, playBinaryBuffer, stop };
 }
