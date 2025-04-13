@@ -6,10 +6,8 @@ import useAudioRecorder from "/hooks/useAudioRecorder";
 import useAudioPlayer from '/hooks/useAudioPlayer';
 import useRealTime from "/hooks/useRealtime";
 import { Button } from "/components/ui/button";
-import StatusMessage from "/components/ui/status-message";
 
 import { Mic, MicOff } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 const Chat = () => {
     const [isRecording, setIsRecording] = useState(false);
@@ -24,7 +22,7 @@ const Chat = () => {
         onReceivedError: message => console.error("error", message),
         onReceivedRecognizingSpeech: message => {
             console.log("recognizing speech received : ", message.transcript);
-            setTranscription(message.transcript)
+            setTranscription(message.transcript) 
         },
         onReceivedRecognizedSpeech: message => {
             console.log("recognized speech received : ", message.transcript);
@@ -138,8 +136,6 @@ const Chat = () => {
         }
     };
 
-    const { t } = useTranslation();
-
     return (
         <div className="chat-container">
             <div className="chat-messages">
@@ -187,12 +183,12 @@ const Chat = () => {
                 <Button
                     onClick={onToggleListening}
                     className={`h-12 w-60 ${isRecording ? "bg-red-600 hover:bg-red-700" : "bg-purple-500 hover:bg-purple-600"}`}
-                    aria-label={isRecording ? t("app.stopRecording") : t("app.startRecording")}
+                    aria-label={isRecording ? "Stop recording" : "Start recording"}
                 >
                     {isRecording ? (
                         <>
                             <MicOff className="mr-2 h-4 w-4" />
-                            {t("app.stopConversation")}
+                            {"Stop conversation"}
                         </>
                     ) : (
                         <>
@@ -201,11 +197,6 @@ const Chat = () => {
                     )}
                 </Button>
             </form>
-            <br/>
-            
-            <div className="mb-4 flex flex-col items-center justify-center">
-                <StatusMessage isRecording={isRecording} />
-            </div>            
         </div>
     );
 }

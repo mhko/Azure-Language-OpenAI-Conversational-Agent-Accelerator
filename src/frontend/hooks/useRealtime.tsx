@@ -80,16 +80,16 @@ export default function useRealTime({
     };
 
     const onMessageReceived = (event: MessageEvent<any>) => {
-        console.log("onMessageReceived")
 
         onWebSocketMessage?.(event);
 
         if (event.data instanceof ArrayBuffer) {
             // This is binary data as ArrayBuffer
-            console.log("Received binary data as ArrayBuffer");
+            console.log("received audio bytes")
             onReceivedResponseAudio?.(event.data); // TODO, nateko, this is hacky. Try encoded base64 string in a json object.
         }
         else {
+            console.log("received a string message")
             let message: Message;
             try {
                 message = JSON.parse(event.data);

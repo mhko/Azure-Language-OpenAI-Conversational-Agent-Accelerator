@@ -29,6 +29,9 @@ PII_CONFIDENCE_THRESHOLD=<pii-confidence-threshold> # float
 
 ROUTER_TYPE=<router-type> # BYPASS | CLU | CQA | ORCHESTRATION | FUNCTION_CALLING
 
+SPEECH_KEY=""
+SPEECH_REGION=""
+
 USE_MI_AUTH=<use-managed-identity-auth> # bool, false for local runs (run az login beforehand)
 MI_CLIENT_ID=<mi-client-id>
 ```
@@ -44,5 +47,5 @@ pip install -r requirements.txt
 cd src
 mv ../../frontend/dist .
 
-flask --app server run --host=0.0.0.0 --port 7000
+quart --app server run --host=0.0.0.0 --port 7000
 ```

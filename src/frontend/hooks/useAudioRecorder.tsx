@@ -5,7 +5,6 @@ const BUFFER_SIZE = 4800;
 
 type Parameters = {
     onAudioRecorded: (audio: ArrayBuffer) => void;
-    //onAudioRecorded: (base64: string) => void;
 };
 
 export default function useAudioRecorder({ onAudioRecorded }: Parameters) {
@@ -29,10 +28,6 @@ export default function useAudioRecorder({ onAudioRecorded }: Parameters) {
             buffer = new Uint8Array(buffer.slice(BUFFER_SIZE));
 
             onAudioRecorded(toSend.buffer)
-            // const regularArray = String.fromCharCode(...toSend);
-            // const base64 = btoa(regularArray);
-
-            //onAudioRecorded(base64);
         }
     };
 
